@@ -71,7 +71,12 @@ class WordleView:
         # Status / message label
         msg_font = font.Font(family="Helvetica", size=12)
         self.status_var = tk.StringVar(value="Guess the 5-letter word!")
-        tk.Label(self.root, textvariable=self.status_var, font=msg_font).pack(pady=(4, 18))
+        tk.Label(self.root, textvariable=self.status_var, font=msg_font).pack(pady=(4, 8))
+
+        # Play Again button — hidden until the game ends
+        self.retry_frame = tk.Frame(self.root)
+        self.retry_btn = tk.Button(self.retry_frame, text="Play Again", font=entry_font, padx=10)
+        self.retry_btn.pack()
 
     # Public interface for the Controller
     def get_input(self):
@@ -102,7 +107,31 @@ class WordleView:
         self.entry.config(state="disabled")
         self.submit_btn.config(state="disabled")
 
+    def reset_grid(self):
+        """Return every cell to its blank, white state."""
+        for row in self.cells:
+            for cell in row:
+                cell.config(text="", bg=self.COLOR["empty"], relief="solid")
+
+    def enable_input(self):
+        """Re-enable entry and submit button for a new round."""
+        self.entry.config(state="normal")
+        self.submit_btn.config(state="normal")
+        self.entry.focus()
+
+    def show_retry_button(self):
+        """Show the Play Again button."""
+        self.retry_frame.pack(pady=(0, 14))
+
+    def hide_retry_button(self):
+        """Hide the Play Again button."""
+        self.retry_frame.pack_forget()
+
     def bind_submit(self, handler):
         """Wire the Guess button and the Enter key to a handler function."""
         self.submit_btn.config(command=handler)
         self.root.bind("<Return>", lambda _event: handler())
+
+    def bind_retry(self, handler):
+        """Wire the Play Again button to a handler function."""
+        self.retry_btn.config(command=handler)

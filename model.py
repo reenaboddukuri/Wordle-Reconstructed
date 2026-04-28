@@ -78,3 +78,8 @@ class WordleModel:
             self.status = "lost"
 
         return None, feedback
+
+    def reset(self):
+        """Clear guesses and status to play again."""
+        self.guesses = []
+        self.status = "playing"

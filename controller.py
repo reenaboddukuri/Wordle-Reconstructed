@@ -15,8 +15,9 @@ class WordleController:
         self.view = view
         self.current_row = 0  # which grid row to fill next
 
-        # Connect the submit handler with the View.
+        # Connect submit and retry handlers to the View.
         self.view.bind_submit(self.on_submit)
+        self.view.bind_retry(self.on_retry)
 
     def on_submit(self):
         """Called every time the user clicks Guess or presses Enter."""
@@ -38,17 +39,25 @@ class WordleController:
 
         # React to the new game status
         if self.model.status == "won":
-            self.view.show_status(
-                f"You won in {self.current_row} guess(es)! "
-            )
+            self.view.show_status(f"You won in {self.current_row} guess(es)!")
             self.view.disable_input()
+            self.view.show_retry_button()
 
         elif self.model.status == "lost":
-            self.view.show_status(
-                f"Game over! The word was {self.model.target}."
-            )
+            self.view.show_status(f"Game over! The word was {self.model.target}.")
             self.view.disable_input()
+            self.view.show_retry_button()
 
         else:
             remaining = WordleModel.MAX_GUESSES - self.current_row
             self.view.show_status(f"{remaining} guess(es) remaining.")
+
+    def on_retry(self):
+        """Reset the model and view so the player can try the same word again."""
+        self.model.reset()
+        self.current_row = 0
+        self.view.reset_grid()
+        self.view.clear_input()
+        self.view.enable_input()
+        self.view.hide_retry_button()
+        self.view.show_status("Guess the 5-letter word!")
