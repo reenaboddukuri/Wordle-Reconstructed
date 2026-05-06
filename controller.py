@@ -1,26 +1,23 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# CONTROLLER
-# Handles user actions, communicates with Model and View.
-# ─────────────────────────────────────────────────────────────────────────────
+#CONTROLLER: Handles user actions, communicates with Model and View.
 
 from model import WordleModel
+import random
 
 class WordleController:
-    """
-    Listens for user input, asks the Model to process it, and tells the View what to display.
-    """
+    #Listens for user input, asks the Model to process it, and tells the View what to display.   
 
-    def __init__(self, model, view):
+    def __init__(self, model, view, words):
         self.model = model
         self.view = view
         self.current_row = 0  # which grid row to fill next
+        self.words = words
 
         # Connect submit and retry handlers to the View.
         self.view.bind_submit(self.on_submit)
         self.view.bind_retry(self.on_retry)
 
     def on_submit(self):
-        """Called every time the user clicks Guess or presses Enter."""
+        #Called every time the user clicks Guess or presses Enter.
         raw_input = self.view.get_input()
 
         # Ask the Model to validate and evaluate the guess.
@@ -53,7 +50,9 @@ class WordleController:
             self.view.show_status(f"{remaining} guess(es) remaining.")
 
     def on_retry(self):
-        """Reset the model and view so the player can try the same word again."""
+        #Reset the model with the random word and clear the grid
+        current_word = random.choice(self.words)
+        self.model.target = current_word
         self.model.reset()
         self.current_row = 0
         self.view.reset_grid()
