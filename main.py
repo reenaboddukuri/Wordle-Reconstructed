@@ -16,7 +16,7 @@ def main():
     words = wordList()
     targetWord = random.choice(words)
 
-    model = WordleModel(target_word=targetWord)
+    model = WordleModel(target_word=targetWord, valid_words=words)
     view  = WordleView(root, model)
     controller = WordleController(model, view, words)
 

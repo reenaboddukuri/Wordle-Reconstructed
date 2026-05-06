@@ -6,8 +6,9 @@ class WordleModel:
     WORD_LENGTH = 5
     MAX_GUESSES = 6
 
-    def __init__(self, target_word):
+    def __init__(self, target_word, valid_words):
         self.target = target_word.upper()
+        self.valid_words = valid_words
         self.guesses = []       # list of guess strings
         self.status = "playing" # "playing", "won", or "lost"
 
@@ -18,6 +19,8 @@ class WordleModel:
             return f"Word must be exactly {self.WORD_LENGTH} letters."
         if not guess.isalpha():
             return "Word must contain only letters."
+        if guess not in self.valid_words:
+            return "Word not in word list."
         return None
 
     """
