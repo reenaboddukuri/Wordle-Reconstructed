@@ -6,17 +6,19 @@ import random
 #Listens for user input, asks the Model to process it, and tells the View what to display.   
 class WordleController:
 
-    def __init__(self, model, view, words):
+    def __init__(self, model, view, words, back):
         self.model = model
         self.view = view
         self.current_row = 0  # which grid row to fill next
         self.words = words
+        self.back = back
 
         # Connect submit and retry handlers to the View.
         self.view.submit_handler = self.on_submit
-        self.view.retry_btn.bind("<Button-1>", lambda e: self.on_retry())
+        self.view.retry_btn.bind("<Button-1>", lambda e: self.on_replay())
         self.view.root.bind("<Return>", lambda e: self.on_submit())
         self.view.root.bind("<Key>", self.view.realKeyBoardClick)
+        self.view.back_btn.bind("<Button-1>", lambda e: self.on_back())
 
     #Called every time the user enters guess.
     def on_submit(self):
@@ -51,8 +53,8 @@ class WordleController:
             remaining = WordleModel.MAX_GUESSES - self.current_row
             self.view.show_status(f"{remaining} guess(es) remaining.")
 
-    #Reset the model with the random word and clear the grid
-    def on_retry(self):
+    #Reset the model with the random word of equal length and clear the grid
+    def on_replay(self):
         current_word = random.choice(self.words)
         self.model.target = current_word
         self.model.reset()
@@ -62,4 +64,10 @@ class WordleController:
         self.view.clear_input()
         self.view.enable_input()
         self.view.hide_retry_button()
-        self.view.show_status("Guess the 5-letter word!")
+        self.view.show_status(f"Guess the {self.model.word_length}-letter word!")
+
+    #Navigate back to the home page to select between puzzle options
+    def on_back(self):
+        self.view.cleanUp()
+        self.back()
+        
