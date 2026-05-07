@@ -20,24 +20,23 @@ class WordleView:
         self.model = model
         self.root.title("Wordle")
         self.root.resizable(True, True)
+        self.root.minsize(550, 780)
         self.root.config(bg = self.COLOR["background"])
-        self._build_ui()
+        self.build_ui()
 
-    def _build_ui(self):
+    def build_ui(self):
         #Construct every widget in the window.
 
         # Title bar
         title_font = font.Font(family="Helvetica", size=22, weight="bold")
         tk.Label(self.root, text="WORDLE", font=title_font, bg=self.COLOR["background"]).pack(pady=(16, 6))
-        tk.Frame(self.root, height=2, bg=self.COLOR["divider"]).pack(
-            fill="x", padx=20
-        )
+        tk.Frame(self.root, height=2, bg=self.COLOR["divider"]).pack(fill="x", padx=20)
 
         # For the 6 by 5 wordle grid
         grid_frame = tk.Frame(self.root, pady=14, bg=self.COLOR["background"])
         grid_frame.pack()
 
-        cell_font = font.Font(family="Helvetica", size=20, weight="bold")
+        cell_font = font.Font(family="Helvetica", size=24, weight="bold")
         self.cells = []  # self.cells[row][col] is a tk.Label
 
         for row in range(self.model.MAX_GUESSES):
@@ -46,24 +45,13 @@ class WordleView:
                 gridBorder = tk.Frame(grid_frame, bg = "#b0aeae")
                 gridBorder.grid(row=row, column=col, padx=3, pady=3)
                 lbl = tk.Label(gridBorder, text="", width=2, font=cell_font, bg=self.COLOR["background"], fg="white")
-                lbl.pack(padx=2, pady=2, ipadx=8, ipady=10)
+                lbl.pack(padx=2, pady=2, ipadx=10, ipady=12)
                 row_cells.append(lbl)
             self.cells.append(row_cells)  # Add the row cells to the cells list
 
-        # Input row
-        input_frame = tk.Frame(self.root, pady=10, bg=self.COLOR["background"])
-        input_frame.pack()
-
-        # Entry field
-        entry_font = font.Font(family="Helvetica", size=13)
-        self.entry_var = tk.StringVar()  # String variable to store the user's input
-        self.entry = tk.Entry(input_frame, textvariable=self.entry_var, font=entry_font, width=9, justify="center")  # Entry field
-        self.entry.pack(side="left", padx=(0, 8))  
-        self.entry.focus()  
-
-        # Submit button
-        self.submit_btn = tk.Button(input_frame, text="Guess", font=entry_font, padx=10)
-        self.submit_btn.pack(side="left")
+        self.entry_var = tk.StringVar() # String variable to store the user's input
+        self.current_row = 0  # current row which shows the letters being typed
+        self.disableInput = False
 
         # Status / message label
         msg_font = font.Font(family="Helvetica", size=12)
@@ -72,11 +60,32 @@ class WordleView:
 
         # Play Again button — hidden until the game ends
         self.retry_frame = tk.Frame(self.root, bg=self.COLOR["background"])
-        self.retry_btn = tk.Button(self.retry_frame, text="Play Again", font=entry_font, padx=10)
+        retry_font = font.Font(family="Helvetica", size=14, weight="bold")
+        self.retry_btn = tk.Button(self.retry_frame, text="Play Again", font=retry_font, bg=self.COLOR["green"], fg="white", padx=30, pady=12)
         self.retry_btn.pack()
 
-    # Public interface for the Controller
+        # Keyboard
+        keyboard = tk.Frame(self.root, bg=self.COLOR["background"])
+        keyboard.pack(pady=(10, 15))
+        keyboard_font = font.Font(family="Helvetica", size=12, weight="bold")
+        self.letterColor = {}
 
+        # Keyboard layout
+        layout = [["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"], ["A", "S", "D", "F", "G", "H", "J", "K", "L"], ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "DELETE"]]
+
+        for row in layout:
+            rowFrame = tk.Frame(keyboard, bg=self.COLOR["background"])
+            rowFrame.pack()
+
+            for key in row:
+                temp = 14 if len(key)>1 else 10
+                indivdualKey = tk.Label(rowFrame, text=key, font=keyboard_font, bg="#b0aeae", fg="black", padx=temp, pady=12)
+                indivdualKey.pack(side="left", padx=3,  pady=3)
+                indivdualKey.bind("<Button-1>", lambda e, k=key: self.onClick(k))
+                if len(key) == 1: # when key is a character (not enter or delete)
+                    self.letterColor[key] = indivdualKey   #saving key for color coding
+
+    # Public interface for the Controller
     # Return what the user has typed in the entry field.
     def get_input(self):
         return self.entry_var.get().strip()
@@ -91,43 +100,109 @@ class WordleView:
 
     # Color one row of the grid to reflect guess feedback received from WordleModel.evaluate()
     def display_feedback(self, row, feedback):
-        for col, (letter, color_name) in enumerate(feedback):
-            self.cells[row][col].config(
-                text=letter,
-                bg=self.COLOR.get(color_name, self.COLOR["gray"]),
-                relief="flat",
-            )
+        for col in range(len(feedback)):
+            letter = feedback[col][0]
+            colorName = feedback[col][1]
+            self.cells[row][col].config(text=letter, bg=self.COLOR[colorName], fg="white")
+        self.current_row = row+1
 
-    # Lock entry and button after the game ends.
+    # Lock keyboard after the game ends.
     def disable_input(self):
-        self.entry.config(state="disabled")
-        self.submit_btn.config(state="disabled")
+        self.disableInput = True
+
+    #update keyboard colors
+    def update_keyboard_color(self, feedback):
+        for char, color in feedback:
+            element = self.letterColor.get(char)
+            colorUpdate = self.COLOR[color]
+            currentColor = element.cget("bg")
+
+            if currentColor == self.COLOR["green"]:
+                continue
+            if currentColor == self.COLOR["yellow"] and color!="green":
+                continue
+            element.config(bg=colorUpdate, fg = "white")
+            
+
+    # reset keyboard
+    def reset_keyboard(self):
+        for i in self.letterColor.values():
+            i.config(bg = "#b0aeae", fg="black")
 
     # Reset to empty grid
     def reset_grid(self):
         for row in self.cells:
-            for cell in row:
-                cell.config(text="", bg=self.COLOR["background"], relief="flat")
+            for cell in row: #resets background and characters
+                cell.config(text="", bg=self.COLOR["background"], fg="white")
+        self.current_row = 0 #reset to row 0
 
     # Re-enable entry and submit button for a new round.
     def enable_input(self):
-        self.entry.config(state="normal")
-        self.submit_btn.config(state="normal")
-        self.entry.focus()
+        self.disableInput = False
 
     # Show the Play Again button.
     def show_retry_button(self):
         self.retry_frame.pack(pady=(0, 14))
 
-    # Hide the Play Again button.
+    # Hide the Play Again button from the UI.
     def hide_retry_button(self):
         self.retry_frame.pack_forget()
 
     # Wire the Guess button and the Enter key to a handler function.
     def bind_submit(self, handler):
-        self.submit_btn.config(command=handler)
-        self.root.bind("<Return>", lambda _event: handler())
+        self.submit_handler = handler
+        self.root.bind("<Return>", lambda action: handler())
+        self.root.bind("<Key>", self.realKeyBoardClick)
 
     # Wire the Play Again button to a handler function.
     def bind_retry(self, handler):
         self.retry_btn.config(command=handler)
+
+    def onClick(self, key):
+        #disabled
+        if self.disableInput:
+            return
+        
+        #based on key
+        if key == "ENTER":
+            self.submit_handler()
+        elif key == "DELETE":
+            current = self.entry_var.get()
+            self.entry_var.set(current[:-1])
+            self.rowWithGuess()
+        else:
+            current = self.entry_var.get()
+            #only allow typing up to 5 letter, then stop accepting more letters
+            if len(current) < self.model.WORD_LENGTH:
+                self.entry_var.set(current + key)
+                self.rowWithGuess()
+    
+    # manages the keys entered from a real keyboard
+    def realKeyBoardClick(self, action):
+        #disabled
+        if self.disableInput:
+            return
+        
+        enteredKey = action.char.upper()
+        if enteredKey.isalpha() and len(enteredKey) == 1:
+            current = self.entry_var.get()
+            if len(current) < self.model.WORD_LENGTH:
+                self.entry_var.set(current + enteredKey)
+                self.rowWithGuess()
+        elif action.keysym == "BackSpace":
+            current = self.entry_var.get()
+            self.entry_var.set(current[:-1]) # excludes last character
+            self.rowWithGuess()
+    
+
+    # to show guess in the grid
+    def rowWithGuess(self):
+        typedGuess = self.entry_var.get()
+        row = self.current_row
+        if row >= self.model.MAX_GUESSES:
+            return
+        for col in range(self.model.WORD_LENGTH):
+            if col < len(typedGuess):
+                self.cells[row][col].config(text=typedGuess[col], fg="black")
+            else:
+                self.cells[row][col].config(text="", fg="white")

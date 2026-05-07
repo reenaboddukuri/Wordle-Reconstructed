@@ -3,8 +3,8 @@
 from model import WordleModel
 import random
 
+#Listens for user input, asks the Model to process it, and tells the View what to display.   
 class WordleController:
-    #Listens for user input, asks the Model to process it, and tells the View what to display.   
 
     def __init__(self, model, view, words):
         self.model = model
@@ -13,24 +13,26 @@ class WordleController:
         self.words = words
 
         # Connect submit and retry handlers to the View.
-        self.view.bind_submit(self.on_submit)
-        self.view.bind_retry(self.on_retry)
+        self.view.submit_handler = self.on_submit
+        self.view.retry_btn.bind("<Button-1>", lambda e: self.on_retry())
+        self.view.root.bind("<Return>", lambda e: self.on_submit())
+        self.view.root.bind("<Key>", self.view.realKeyBoardClick)
 
+    #Called every time the user enters guess.
     def on_submit(self):
-        #Called every time the user clicks Guess or presses Enter.
         raw_input = self.view.get_input()
 
         # Ask the Model to validate and evaluate the guess.
         error, feedback = self.model.submit_guess(raw_input)
 
+        # Bad input then show the message and let the user try again
         if error:
-            # Bad input then show the message and let the user try again
             self.view.show_status(error)
-            self.view.clear_input()
             return
 
         # Valid guess then update the grid row with colored feedback
         self.view.display_feedback(self.current_row, feedback)
+        self.view.update_keyboard_color(feedback)
         self.view.clear_input()
         self.current_row += 1
 
@@ -49,13 +51,14 @@ class WordleController:
             remaining = WordleModel.MAX_GUESSES - self.current_row
             self.view.show_status(f"{remaining} guess(es) remaining.")
 
+    #Reset the model with the random word and clear the grid
     def on_retry(self):
-        #Reset the model with the random word and clear the grid
         current_word = random.choice(self.words)
         self.model.target = current_word
         self.model.reset()
         self.current_row = 0
         self.view.reset_grid()
+        self.view.reset_keyboard()
         self.view.clear_input()
         self.view.enable_input()
         self.view.hide_retry_button()
