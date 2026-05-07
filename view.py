@@ -20,28 +20,32 @@ class WordleView:
         self.model = model
         self.root.title("Wordle")
         self.root.resizable(True, True)
-        self.root.minsize(550, 780)
+        self.root.minsize(480, 680)
         self.root.config(bg = self.COLOR["background"])
+        self.puzzle_frame = tk.Frame(root, bg = self.COLOR["background"])
+        self.puzzle_frame.pack(fill="both", expand=True)
         self.build_ui()
 
+    #Construct every widget in the window.
     def build_ui(self):
-        #Construct every widget in the window.
 
         # Title bar
-        title_font = font.Font(family="Helvetica", size=22, weight="bold")
-        tk.Label(self.root, text="WORDLE", font=title_font, bg=self.COLOR["background"]).pack(pady=(16, 6))
-        tk.Frame(self.root, height=2, bg=self.COLOR["divider"]).pack(fill="x", padx=20)
+        title_font = font.Font(family="Helvetica", size=18, weight="bold")
+        tk.Label(self.puzzle_frame, text="WORDLE", font=title_font, bg=self.COLOR["background"]).pack(pady=(12, 2))
+        heading_font = font.Font(family="Helvetica", size=10)
+        tk.Label(self.puzzle_frame, text=f"({self.model.word_length} letters)", font=heading_font, bg=self.COLOR["background"], fg="gray").pack(pady=(0,4))
+        tk.Frame(self.puzzle_frame, height=2, bg=self.COLOR["divider"]).pack(fill="x", padx=16)
 
-        # For the 6 by 5 wordle grid
-        grid_frame = tk.Frame(self.root, pady=14, bg=self.COLOR["background"])
+        # For the wordle grid
+        grid_frame = tk.Frame(self.puzzle_frame, pady=10, bg=self.COLOR["background"])
         grid_frame.pack()
 
-        cell_font = font.Font(family="Helvetica", size=24, weight="bold")
+        cell_font = font.Font(family="Helvetica", size=20, weight="bold")
         self.cells = []  # self.cells[row][col] is a tk.Label
 
         for row in range(self.model.MAX_GUESSES):
             row_cells = []
-            for col in range(self.model.WORD_LENGTH):
+            for col in range(self.model.word_length):
                 gridBorder = tk.Frame(grid_frame, bg = "#b0aeae")
                 gridBorder.grid(row=row, column=col, padx=3, pady=3)
                 lbl = tk.Label(gridBorder, text="", width=2, font=cell_font, bg=self.COLOR["background"], fg="white")
@@ -54,19 +58,23 @@ class WordleView:
         self.disableInput = False
 
         # Status / message label
-        msg_font = font.Font(family="Helvetica", size=12)
-        self.status_var = tk.StringVar(value="Guess the 5-letter word!")
-        tk.Label(self.root, textvariable=self.status_var, font=msg_font, bg=self.COLOR["background"]).pack(pady=(4, 8))
+        msg_font = font.Font(family="Helvetica", size=11)
+        self.status_var = tk.StringVar(value=f"Guess the {self.model.word_length}-letter word!")
+        tk.Label(self.puzzle_frame, textvariable=self.status_var, font=msg_font, bg=self.COLOR["background"]).pack(pady=(3, 6))
 
-        # Play Again button — hidden until the game ends
-        self.retry_frame = tk.Frame(self.root, bg=self.COLOR["background"])
-        retry_font = font.Font(family="Helvetica", size=14, weight="bold")
-        self.retry_btn = tk.Button(self.retry_frame, text="Play Again", font=retry_font, bg=self.COLOR["green"], fg="white", padx=30, pady=12)
-        self.retry_btn.pack()
+        # Play Again and Change length button — hidden until the game ends
+        self.retry_frame = tk.Frame(self.puzzle_frame, bg=self.COLOR["background"])
+        retry_font = font.Font(family="Helvetica", size=12, weight="bold")
+
+        self.retry_btn = tk.Label(self.retry_frame, text="Play Again", font=retry_font, bg=self.COLOR["green"], fg="white", padx=24, pady=10)
+        self.retry_btn.pack(side="left", padx=8)
+
+        self.back_btn = tk.Label(self.retry_frame, text="Change Length", font=retry_font, bg=self.COLOR["green"], fg="white", padx=24, pady=10)
+        self.back_btn.pack(side="left", padx=8)
 
         # Keyboard
-        keyboard = tk.Frame(self.root, bg=self.COLOR["background"])
-        keyboard.pack(pady=(10, 15))
+        self.keyboard = tk.Frame(self.puzzle_frame, bg=self.COLOR["background"])
+        self.keyboard.pack(pady=(8, 12))
         keyboard_font = font.Font(family="Helvetica", size=12, weight="bold")
         self.letterColor = {}
 
@@ -74,13 +82,13 @@ class WordleView:
         layout = [["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"], ["A", "S", "D", "F", "G", "H", "J", "K", "L"], ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "DELETE"]]
 
         for row in layout:
-            rowFrame = tk.Frame(keyboard, bg=self.COLOR["background"])
+            rowFrame = tk.Frame(self.keyboard, bg=self.COLOR["background"])
             rowFrame.pack()
 
             for key in row:
-                temp = 14 if len(key)>1 else 10
-                indivdualKey = tk.Label(rowFrame, text=key, font=keyboard_font, bg="#b0aeae", fg="black", padx=temp, pady=12)
-                indivdualKey.pack(side="left", padx=3,  pady=3)
+                temp = 12 if len(key)>1 else 8
+                indivdualKey = tk.Label(rowFrame, text=key, font=keyboard_font, bg="#b0aeae", fg="black", padx=temp, pady=10)
+                indivdualKey.pack(side="left", padx=2,  pady=2)
                 indivdualKey.bind("<Button-1>", lambda e, k=key: self.onClick(k))
                 if len(key) == 1: # when key is a character (not enter or delete)
                     self.letterColor[key] = indivdualKey   #saving key for color coding
@@ -172,8 +180,8 @@ class WordleView:
             self.rowWithGuess()
         else:
             current = self.entry_var.get()
-            #only allow typing up to 5 letter, then stop accepting more letters
-            if len(current) < self.model.WORD_LENGTH:
+            #only allow typing up to puzzle's max letter, then stop accepting more letters
+            if len(current) < self.model.word_length:
                 self.entry_var.set(current + key)
                 self.rowWithGuess()
     
@@ -186,7 +194,7 @@ class WordleView:
         enteredKey = action.char.upper()
         if enteredKey.isalpha() and len(enteredKey) == 1:
             current = self.entry_var.get()
-            if len(current) < self.model.WORD_LENGTH:
+            if len(current) < self.model.word_length:
                 self.entry_var.set(current + enteredKey)
                 self.rowWithGuess()
         elif action.keysym == "BackSpace":
@@ -201,8 +209,15 @@ class WordleView:
         row = self.current_row
         if row >= self.model.MAX_GUESSES:
             return
-        for col in range(self.model.WORD_LENGTH):
+        for col in range(self.model.word_length):
             if col < len(typedGuess):
                 self.cells[row][col].config(text=typedGuess[col], fg="black")
             else:
                 self.cells[row][col].config(text="", fg="white")
+
+    #unbind keys
+    def cleanUp(self):
+        self.root.unbind("<Return>")
+        self.root.unbind("<Key>")
+        self.puzzle_frame.destroy() #clears the screen of widgets
+        

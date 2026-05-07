@@ -3,20 +3,20 @@
 class WordleModel:
     # Stores the target word, all guesses, current game status, validates input, letter evaluation using colors (green, yellow, dark gray)
 
-    WORD_LENGTH = 5
     MAX_GUESSES = 6
 
-    def __init__(self, target_word, valid_words):
+    def __init__(self, target_word, valid_words, word_length):
         self.target = target_word.upper()
         self.valid_words = valid_words
+        self.word_length = word_length
         self.guesses = []       # list of guess strings
         self.status = "playing" # "playing", "won", or "lost"
 
     # Checks if guess is valid
     # Returns an error string if invalid, and None if the guess is valid.
     def validate(self, guess):
-        if len(guess) != self.WORD_LENGTH:
-            return f"Word must be exactly {self.WORD_LENGTH} letters."
+        if len(guess) != self.word_length:
+            return f"Word must be exactly {self.word_length} letters."
         if not guess.isalpha():
             return "Word must contain only letters."
         if guess not in self.valid_words:
@@ -31,7 +31,7 @@ class WordleModel:
     """
     def evaluate(self, guess):
         guess = guess.upper()
-        results = ["gray"] * self.WORD_LENGTH
+        results = ["gray"] * self.word_length
 
         # Keep track of which letters are still unmatched,
         # so a repeated letter in the guess doesn't earn two yellows.
@@ -72,3 +72,4 @@ class WordleModel:
         #Clear guesses and status to play again.
         self.guesses = []
         self.status = "playing"
+        
