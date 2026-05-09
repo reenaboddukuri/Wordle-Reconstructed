@@ -1,4 +1,4 @@
-#A Wordle game using Model-View-Controller architecture
+# A Wordle game using Model-View-Controller desgin pattern
 
 import tkinter as tk
 from model import WordleModel
@@ -7,13 +7,13 @@ from controller import WordleController
 from tkinter import font
 import random
 
-#reading words from the word list
+# Reading words from a word list
 def wordList(filepath):
     with open(filepath, "r") as f:
         return [row.strip() for row in f if row.strip()]
 
 
-# play select length puzzle
+# Play the select length puzzle
 def play_puzzle(root, word_length):
     if word_length == 5:
         words = wordList("words.txt")
@@ -25,7 +25,7 @@ def play_puzzle(root, word_length):
     view  = WordleView(root, model)
     controller = WordleController(model, view, words, back=lambda: home_page(root))
 
-#shows wordle home page
+# Shows wordle home page
 def home_page(root):
     # Title bar
     title_font = font.Font(family="Helvetica", size=24, weight="bold")
@@ -42,7 +42,7 @@ def home_page(root):
     button_frame.pack(pady=10)
 
     def selectGame(length):
-        option_frame.destroy() #removes frame screen
+        option_frame.destroy() #removes frame from screen
         play_puzzle(root, length)
     
     button_five = tk.Label(button_frame, text="5 letters", font=button_font, bg="#6aaa63", fg="white", padx=24, pady=14)
