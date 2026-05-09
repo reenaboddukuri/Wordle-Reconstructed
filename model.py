@@ -1,10 +1,11 @@
-#MODEL: Handles game data, rules, and state.
+#MODEL: Manages Wordle data and logic
 
+# Stores the target word, all guesses, current game status, validates input, evaluates letters using colors (green, yellow, dark gray)
 class WordleModel:
-    # Stores the target word, all guesses, current game status, validates input, letter evaluation using colors (green, yellow, dark gray)
 
     MAX_GUESSES = 6
 
+    # constructor for WordleModel 
     def __init__(self, target_word, valid_words, word_length):
         self.target = target_word.upper()
         self.valid_words = valid_words
@@ -12,7 +13,7 @@ class WordleModel:
         self.guesses = []       # list of guess strings
         self.status = "playing" # "playing", "won", or "lost"
 
-    # Checks if guess is valid
+    # Manages edge cases
     # Returns an error string if invalid, and None if the guess is valid.
     def validate(self, guess):
         if len(guess) != self.word_length:
@@ -21,7 +22,7 @@ class WordleModel:
             return "Word must contain only letters."
         if guess not in self.valid_words:
             return "Word not in word list."
-        return None
+        return None #if valid, return None
 
     """
     Compare the guess to the target word letter by letter:
@@ -31,13 +32,13 @@ class WordleModel:
     """
     def evaluate(self, guess):
         guess = guess.upper()
-        results = ["gray"] * self.word_length
+        results = ["gray"] * self.word_length # Initializes all letters to gray (not in target word)
 
-        # Keep track of which letters are still unmatched,
-        # so a repeated letter in the guess doesn't earn two yellows.
+        # Tracks unmatched letters so a repeated letter in the guess doesn't earn two yellows.
         remaining_letters = list(self.target)
 
         # First pass: mark exact matches (green).
+        # For matched letters, updates color to green and REMOVES from remaining unmatched letters list
         for i, letter in enumerate(guess):
             if letter == self.target[i]:
                 results[i] = "green"
@@ -60,7 +61,9 @@ class WordleModel:
         error = self.validate(guess)  # Check if the guess is valid
         if error: return error, None
         feedback = self.evaluate(guess)  # Evaluate the guess
-        self.guesses.append(guess)  # Record the guesses
+        self.guesses.append(guess)  # Record the guesses by adding to the list of guesses
+        
+        # When guess matches the target word, sets the status of the game to “won”
         if guess == self.target:
             self.status = "won"
         elif len(self.guesses) >= self.MAX_GUESSES:
@@ -68,8 +71,8 @@ class WordleModel:
 
         return None, feedback
 
+    # Clears guesses and resets status to playing.
     def reset(self):
-        #Clear guesses and status to play again.
         self.guesses = []
         self.status = "playing"
         

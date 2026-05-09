@@ -3,9 +3,9 @@
 import tkinter as tk
 from tkinter import font
 
-#Includes methods that the Controller calls to read input and to push updates back to the screen.
+#Includes functions that the Controller calls to read input and to push updates back to the screen.
 class WordleView:
-    # Wordle-style color list
+    # Stores a dictionary of the colors used
     COLOR = {
         "green":  "#6aaa63",
         "yellow": "#c9b458",
@@ -15,6 +15,7 @@ class WordleView:
         "background": "#f7f1df"
     }
 
+    # Constructor for title, window size, frame for the layout, background, etc.
     def __init__(self, root, model):
         self.root = root
         self.model = model
@@ -30,6 +31,7 @@ class WordleView:
     def build_ui(self):
 
         # Title bar
+        # Builds title label, heading, a divider, builds the guessing grid and stores every cell into a list for updating it with the letters and colors
         title_font = font.Font(family="Helvetica", size=18, weight="bold")
         tk.Label(self.puzzle_frame, text="WORDLE", font=title_font, bg=self.COLOR["background"]).pack(pady=(12, 2))
         heading_font = font.Font(family="Helvetica", size=10)
@@ -53,16 +55,19 @@ class WordleView:
                 row_cells.append(lbl)
             self.cells.append(row_cells)  # Add the row cells to the cells list
 
-        self.entry_var = tk.StringVar() # String variable to store the user's input
-        self.current_row = 0  # current row which shows the letters being typed
+        self.current_row = 0  # variable current row to track which line the letter should be typed
+        self.entry_var = tk.StringVar() # variable stringVar storing current user input
+
+        # variable disable input helps with preventing any input to be entered after the game ends
         self.disableInput = False
 
         # Status / message label
+        # label for the status so that the controller can use StringVar to update the input dynamically
         msg_font = font.Font(family="Helvetica", size=11)
         self.status_var = tk.StringVar(value=f"Guess the {self.model.word_length}-letter word!")
         tk.Label(self.puzzle_frame, textvariable=self.status_var, font=msg_font, bg=self.COLOR["background"]).pack(pady=(3, 6))
 
-        # Play Again and Change length button — hidden until the game ends
+        # Play Again and Change length buttons are hidden until the game ends
         self.retry_frame = tk.Frame(self.puzzle_frame, bg=self.COLOR["background"])
         retry_font = font.Font(family="Helvetica", size=12, weight="bold")
 
@@ -73,9 +78,12 @@ class WordleView:
         self.back_btn.pack(side="left", padx=8)
 
         # Keyboard
+        # built an on-screen keyboard, each key is clickable
         self.keyboard = tk.Frame(self.puzzle_frame, bg=self.COLOR["background"])
         self.keyboard.pack(pady=(8, 12))
         keyboard_font = font.Font(family="Helvetica", size=12, weight="bold")
+        
+        # letter are stored in dictionary letterColor to update the key background based on feedback received later on
         self.letterColor = {}
 
         # Keyboard layout
@@ -93,7 +101,6 @@ class WordleView:
                 if len(key) == 1: # when key is a character (not enter or delete)
                     self.letterColor[key] = indivdualKey   #saving key for color coding
 
-    # Public interface for the Controller
     # Return what the user has typed in the entry field.
     def get_input(self):
         return self.entry_var.get().strip()
@@ -102,7 +109,7 @@ class WordleView:
     def clear_input(self):
         self.entry_var.set("")
 
-    # Replace the status message.
+    # Updates the status message shown to the player.
     def show_status(self, message):
         self.status_var.set(message)
 
@@ -121,23 +128,28 @@ class WordleView:
     #update keyboard colors
     def update_keyboard_color(self, feedback):
         for char, color in feedback:
-            element = self.letterColor.get(char)
-            colorUpdate = self.COLOR[color]
-            currentColor = element.cget("bg")
+            element = self.letterColor.get(char) #element for the char
+            colorUpdate = self.COLOR[color] #gets color to update with
+            currentColor = element.cget("bg")   #gets current color of char's key
 
+            #if green, continue to next char
             if currentColor == self.COLOR["green"]:
                 continue
+            
+            #if yellow, and colorUpdate is not green, don't change 
             if currentColor == self.COLOR["yellow"] and color!="green":
                 continue
+
+            #else update the key's color
             element.config(bg=colorUpdate, fg = "white")
             
 
-    # reset keyboard
+    # reset keyboard's keys to gray for a new game
     def reset_keyboard(self):
         for i in self.letterColor.values():
             i.config(bg = "#b0aeae", fg="black")
 
-    # Reset to empty grid
+    # Reset to empty grid for a new game
     def reset_grid(self):
         for row in self.cells:
             for cell in row: #resets background and characters
@@ -156,28 +168,34 @@ class WordleView:
     def hide_retry_button(self):
         self.retry_frame.pack_forget()
 
-    # Wire the Guess button and the Enter key to a handler function.
+    # Connects keyboard & button clicks to functions handling them 
     def bind_submit(self, handler):
-        self.submit_handler = handler
-        self.root.bind("<Return>", lambda action: handler())
+        self.submit_handler = handler #saves function to be used for later
+        self.root.bind("<Return>", lambda action: handler()) #run handler when return pressed
         self.root.bind("<Key>", self.realKeyBoardClick)
 
-    # Wire the Play Again button to a handler function.
+    # connects the Play Again button to the handler function that runs when we click play again 
     def bind_retry(self, handler):
         self.retry_btn.config(command=handler)
 
+    # manages the on-screen clicks  
     def onClick(self, key):
-        #disabled
+        #disabled, ignores clicks
         if self.disableInput:
             return
         
         #based on key
+        #submission calls the handler
         if key == "ENTER":
             self.submit_handler()
+        
+        # remvove the last character enter
         elif key == "DELETE":
             current = self.entry_var.get()
             self.entry_var.set(current[:-1])
             self.rowWithGuess()
+
+        # any letter inputted adds to the buffer to add to the row display
         else:
             current = self.entry_var.get()
             #only allow typing up to puzzle's max letter, then stop accepting more letters
@@ -197,13 +215,14 @@ class WordleView:
             if len(current) < self.model.word_length:
                 self.entry_var.set(current + enteredKey)
                 self.rowWithGuess()
+        
         elif action.keysym == "BackSpace":
             current = self.entry_var.get()
             self.entry_var.set(current[:-1]) # excludes last character
             self.rowWithGuess()
     
 
-    # to show guess in the grid
+    # To display the guess in the current grid row. For every column, if a letter is typed, displays it.
     def rowWithGuess(self):
         typedGuess = self.entry_var.get()
         row = self.current_row
